@@ -142,5 +142,5 @@ function tryListen(port: number): void {
   });
 }
 
-// CLI mode: start immediately
-if (arg) startServer();
+// Start server (CLI mode or file picker with no running server)
+if (filePath) startServer();
