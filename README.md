@@ -8,7 +8,11 @@ A real-time preview server for Bootstrap Studio `.bsdesign` files. Provides a vi
 - **Live Preview** — Renders `.bsdesign` pages into full HTML using Bootstrap 5 CDN
 - **Auto-Reload** — WebSocket pushes instant page refresh when the file changes
 - **CSS Support** — Correctly parses Bootstrap Studio's structured CSS block format
-- **Utility Class Mapping** — Auto-generates Bootstrap utility classes from component properties (`margin-x` → `mx-auto`, `padding-y` → `py-4`, etc.)
+- **Utility Class Mapping** — Auto-generates Bootstrap utility classes from component properties
+- **Port Conflict Handling** — Auto-kills old processes on port 4400, falls back to 4401
+- **Collapsible Panel** — Top drop-zone can be collapsed to maximize preview area
+- **Chinese UI** — Full Chinese interface to avoid browser translation prompts
+- **Standalone EXE** — Downloadable exe from GitHub Releases, no Node.js required
 - **22 Component Types** — HTML, Body, Container, Row, Column, Heading, Paragraph, Badge, Button, Image, Div, Span, Link, Form, Input, Textarea, Select, Label, Card, CardBody, CustomCode, InlineCharacter
 
 ## Installation
@@ -43,6 +47,10 @@ Then open `http://localhost:4400` and drag a `.bsdesign` file onto the dashboard
 | Load file | Drag `.bsdesign` onto the drop zone, or click to browse |
 | Preview | Rendered page appears in the iframe automatically |
 | Auto-reload | File changes trigger instant refresh (use with MCP server) |
+
+### Standalone EXE
+
+Download `bsdesign-live.exe` from [GitHub Releases](https://github.com/fengweimian/bsdesign-live-preview/releases). No Node.js or npm required — double-click, select a `.bsdesign` file, and preview opens automatically in your browser.
 
 ## Requirements
 
@@ -96,6 +104,10 @@ node dist/index.js
 | 加载文件 | 拖拽 `.bsdesign` 到虚线区域，或点击浏览 |
 | 预览 | 渲染的页面自动出现在内嵌框架中 |
 | 自动刷新 | 文件变更时触发即时刷新（配合 MCP 服务器使用） |
+
+### 独立 EXE
+
+从 [GitHub Releases](https://github.com/fengweimian/bsdesign-live-preview/releases) 下载 `bsdesign-live.exe`。无需安装 Node.js — 双击运行，选择 `.bsdesign` 文件即可自动打开浏览器预览。
 
 ## 环境要求
 
