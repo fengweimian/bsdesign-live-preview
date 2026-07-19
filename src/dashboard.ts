@@ -29,11 +29,20 @@ function getDashboardHtml(filePath: string): string {
   .toolbar .dot { width: 8px; height: 8px; border-radius: 50%; background: #00ff88; animation: pulse 1.5s infinite; }
   .toolbar .dot.off { background: #ff4444; animation: none; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .toggle-btn { background: none; border: 1px solid #30363d; color: #8b949e; cursor: pointer;
+    font-size: 14px; padding: 2px 8px; border-radius: 4px; line-height: 1; transition: all .2s; }
+  .toggle-btn:hover { color: #00ff88; border-color: #00ff8844; }
+
+  .top-panel {
+    overflow: hidden; transition: max-height .3s ease, padding .3s ease, margin .3s ease, opacity .3s ease;
+    max-height: 120px; padding: 0; margin: 8px; opacity: 1;
+  }
+  .top-panel.collapsed { max-height: 0; margin: 0 8px; opacity: 0; }
 
   .drop-zone {
-    margin: 8px; padding: 20px; border: 2px dashed #30363d;
+    padding: 20px; border: 2px dashed #30363d;
     border-radius: 8px; text-align: center; color: #8b949e;
-    font-size: 13px; cursor: pointer; transition: all .2s; flex-shrink: 0;
+    font-size: 13px; cursor: pointer; transition: all .2s;
   }
   .drop-zone:hover, .drop-zone.drag { border-color: #00ff88; color: #00ff88; background: #0d111744; }
   .drop-zone input { display: none; }
@@ -55,12 +64,15 @@ function getDashboardHtml(filePath: string): string {
   <div class="logo">BSDesign Live</div>
   <div class="file-info">📄 <span id="filename">${name}</span> · ${size} KB · ${stats.mtime.toLocaleTimeString()}</div>
   <div class="status"><span class="dot" id="dot"></span><span id="status-text">已连接</span></div>
+  <button class="toggle-btn" id="toggle-btn" title="折叠/展开">▲</button>
 </div>
 
+<div class="top-panel" id="top-panel">
 <label class="drop-zone" id="drop-zone" for="file-input">
   拖拽 <strong>.bsdesign</strong> 文件到此处，或点击浏览
   <input type="file" id="file-input" accept=".bsdesign">
 </label>
+</div>
 
 <div class="preview-wrap">
   <iframe id="preview" src="/preview"></iframe>
@@ -76,6 +88,13 @@ const filename = document.getElementById('filename');
 const previewFrame = document.getElementById('preview');
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
+const toggleBtn = document.getElementById('toggle-btn');
+const topPanel = document.getElementById('top-panel');
+
+toggleBtn.addEventListener('click', function() {
+  topPanel.classList.toggle('collapsed');
+  toggleBtn.textContent = topPanel.classList.contains('collapsed') ? '▼' : '▲';
+});
 
 function showToast(msg, duration) {
   toast.textContent = msg; toast.classList.add('show');
