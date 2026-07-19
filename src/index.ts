@@ -2,6 +2,7 @@
 import { resolve, basename, join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { execSync } from 'node:child_process';
 import express from 'express';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'node:http';
@@ -13,10 +14,9 @@ import { buildCss } from './css-builder.js';
 import { getDashboardHtml } from './dashboard.js';
 
 let filePath = resolve(process.argv[2] || '');
-const PORT = parseInt(process.env.PORT || '4400', 10);
 
 if (!process.argv[2]) {
-  console.log('No file specified. Open http://localhost:' + PORT + ' and drag a .bsdesign file to start.');
+  console.log('No file specified. Open http://localhost:4400 and drag a .bsdesign file to start.');
 }
 
 let currentHtml = '';
@@ -112,9 +112,32 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 if (filePath) build();
 startWatcher();
 
-server.listen(PORT, () => {
-  console.log(`\n  BSDesign Live Preview`);
-  console.log(`  ─────────────────────`);
-  console.log(`  Dashboard: http://localhost:${PORT}`);
-  console.log(`  File:      ${filePath || '(none - drag a file)'}\n`);
-});
+function tryListen(port: number): void {
+  server.listen(port, () => {
+    console.log(`\n  BSDesign Live Preview`);
+    console.log(`  ─────────────────────`);
+    console.log(`  Dashboard: http://localhost:${port}`);
+    console.log(`  File:      ${filePath || '(none - drag a file)'}\n`);
+  });
+  server.on('error', (e: NodeJS.ErrnoException) => {
+    if (e.code === 'EADDRINUSE') {
+      if (port === 4400) {
+        try {
+          if (process.platform === 'win32') {
+            execSync('powershell -Command "Get-NetTCPConnection -LocalPort 4400 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }"', { windowsHide: true });
+          } else {
+            execSync('lsof -ti:4400 | xargs kill -9 2>/dev/null', { windowsHide: true });
+          }
+        } catch {}
+        console.log(`  Port 4400 was busy (old process killed). Retrying...`);
+        setTimeout(() => tryListen(4400), 500);
+      } else {
+        console.log(`  Port 4400 unavailable. Using port ${port}`);
+        tryListen(port + 1);
+      }
+    } else {
+      console.error(`  Server error: ${e.message}`);
+    }
+  });
+}
+tryListen(4400);

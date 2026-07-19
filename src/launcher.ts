@@ -1,6 +1,6 @@
 import { resolve, basename, join } from 'node:path';
-import { watchFile, existsSync, mkdirSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { watchFile, existsSync } from 'node:fs';
+import { execSync, spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import express from 'express';
 import { WebSocketServer } from 'ws';
@@ -11,7 +11,6 @@ import { renderPage } from './renderer.js';
 import { buildCss } from './css-builder.js';
 import { getDashboardHtml } from './dashboard.js';
 
-const PORT = 4400;
 let filePath = '';
 let currentHtml = '';
 
@@ -24,12 +23,30 @@ if (arg) {
     const ps = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = 'Bootstrap Studio Files (*.bsdesign)|*.bsdesign'; $f.Title = 'Select .bsdesign file'; if ($f.ShowDialog() -eq 'OK') { $f.FileName }`;
     filePath = execSync(`powershell -Command "${ps}"`, { encoding: 'utf-8', windowsHide: true }).trim();
   } catch {}
+
+  if (filePath) {
+    let serverRunning = false;
+    try {
+      execSync('powershell -Command "Invoke-WebRequest -Uri http://localhost:4400 -UseBasicParsing -TimeoutSec 2"', { windowsHide: true });
+      serverRunning = true;
+    } catch {}
+
+    if (serverRunning) {
+      try {
+        const psUpload = `Invoke-WebRequest -Uri http://localhost:4400/api/upload -Method POST -Form @{file=Get-Item '${filePath.replace(/'/g, "''")}'} -UseBasicParsing`;
+        execSync(`powershell -Command "${psUpload}"`, { windowsHide: true });
+        execSync('start http://localhost:4400', { windowsHide: true });
+      } catch {}
+      process.exit(0);
+    }
+  }
 }
+
 
 function build(): boolean {
   try {
     if (!filePath || !existsSync(filePath)) {
-      currentHtml = '<h1 style="text-align:center;padding:4rem">Drop a .bsdesign file to preview</h1>';
+      currentHtml = '<h1 style="text-align:center;padding:4rem;color:#8b949e">拖拽 .bsdesign 文件开始预览</h1>';
       return true;
     }
     const data = parseBsDesign(filePath);
@@ -45,7 +62,7 @@ function build(): boolean {
       .replace('/* CUSTOM_JS */', customJs);
     return true;
   } catch (e) {
-    currentHtml = `<h1 style="text-align:center;padding:4rem;color:red">Error: ${e instanceof Error ? e.message : String(e)}</h1>`;
+    currentHtml = `<h1 style="text-align:center;padding:4rem;color:red">错误: ${e instanceof Error ? e.message : String(e)}</h1>`;
     return true;
   }
 }
@@ -91,8 +108,7 @@ const upload = multer({ dest: join(tmpdir(), 'bsdesign-uploads') });
 app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) { res.json({ ok: false, error: 'No file uploaded' }); return; }
-    const newPath = resolve(req.file.path);
-    filePath = newPath;
+    filePath = resolve(req.file.path);
     build();
     startWatcher();
     notifyClients();
@@ -102,11 +118,29 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
 });
 
-build();
-startWatcher();
+function startServer() {
+  build();
+  startWatcher();
+  tryListen(4400);
+}
 
-httpServer.listen(PORT, () => {
-  const { execSync: e } = require('node:child_process');
-  try { e(`start http://localhost:${PORT}`, { windowsHide: true }); } catch {}
-  console.log(`\n  BSDesign Live Preview\n  Dashboard: http://localhost:${PORT}\n`);
-});
+function tryListen(port: number): void {
+  httpServer.listen(port, () => {
+    try { execSync(`start http://localhost:${port}`, { windowsHide: true }); } catch {}
+  });
+  httpServer.on('error', (e: NodeJS.ErrnoException) => {
+    if (e.code === 'EADDRINUSE') {
+      if (port === 4400) {
+        try {
+          execSync('powershell -Command "Get-NetTCPConnection -LocalPort 4400 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }"', { windowsHide: true });
+        } catch {}
+        setTimeout(() => tryListen(4400), 500);
+      } else {
+        tryListen(port + 1);
+      }
+    }
+  });
+}
+
+// CLI mode: start immediately
+if (arg) startServer();
