@@ -27,7 +27,7 @@ if (arg) {
   if (filePath) {
     let serverRunning = false;
     try {
-      execSync('powershell -Command "Invoke-WebRequest -Uri http://localhost:4400 -UseBasicParsing -TimeoutSec 2"', { windowsHide: true });
+      execSync('powershell -Command "Invoke-WebRequest -Uri http://localhost:4400 -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue | Out-Null"', { windowsHide: true, stdio: 'pipe' });
       serverRunning = true;
     } catch {}
 
