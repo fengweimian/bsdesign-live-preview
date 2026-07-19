@@ -32,11 +32,12 @@ function build(): boolean {
     const page = data.design.pages.children[0];
     const html = renderPage(page.html, page.name);
 
-    const cssFile = data.design.assets.css.children[0];
-    const customCss = cssFile?.blocks ? buildCss(cssFile.blocks) : '';
+    const allCssFiles = data.design.assets.css.children || [];
+    const allBlocks = allCssFiles.flatMap(f => f.blocks || []);
+    const customCss = buildCss(allBlocks);
 
-    const jsFile = data.design.assets.js.children?.[0];
-    const customJs = jsFile?.blocks?.map((b: { value?: string }) => b.value || '').join('\n') || '';
+    const allJsFiles = data.design.assets.js.children || [];
+    const customJs = allJsFiles.flatMap(f => f.blocks?.map((b: { value?: string }) => b.value || '') || []).join('\n');
 
     const full = html
       .replace('<!-- CUSTOM_CSS -->', `<style>\n${customCss}\n</style>`)
