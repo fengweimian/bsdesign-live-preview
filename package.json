@@ -15,12 +15,16 @@
   "dependencies": {
     "chokidar": "^4.0.3",
     "express": "^5.1.0",
+    "multer": "^2.2.0",
     "ws": "^8.18.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
+    "@types/multer": "^2.2.0",
     "@types/node": "^22.10.0",
     "@types/ws": "^8.18.1",
+    "esbuild": "^0.28.1",
+    "postject": "^1.0.0-alpha.6",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

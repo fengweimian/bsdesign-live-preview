@@ -1,10 +1,11 @@
-import { resolve } from 'node:path';
-import { statSync, existsSync } from 'node:fs';
+import { resolve, basename, join } from 'node:path';
+import { watchFile, existsSync, mkdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import express from 'express';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'node:http';
-import { watchFile, unwatchFile, statSync, existsSync } from 'node:fs';
+import multer from 'multer';
 import { parseBsDesign } from './parser.js';
 import { renderPage } from './renderer.js';
 import { buildCss } from './css-builder.js';
@@ -84,15 +85,17 @@ app.get('/preview', (_req, res) => {
   res.send(currentHtml || '<h1>Build failed</h1>');
 });
 
-app.post('/api/select', (req, res) => {
+const upload = multer({ dest: join(tmpdir(), 'bsdesign-uploads') });
+
+app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
-    const p = resolve(req.body.file);
-    if (!existsSync(p)) { res.json({ ok: false, error: 'File not found' }); return; }
-    filePath = p;
+    if (!req.file) { res.json({ ok: false, error: 'No file uploaded' }); return; }
+    const newPath = resolve(req.file.path);
+    filePath = newPath;
     build();
     startWatcher();
     notifyClients();
-    res.json({ ok: true, name: require('node:path').basename(filePath) });
+    res.json({ ok: true, name: req.file.originalname });
   } catch (e) {
     res.json({ ok: false, error: e instanceof Error ? e.message : String(e) });
   }

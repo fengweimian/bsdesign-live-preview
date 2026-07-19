@@ -109,7 +109,7 @@ connectWS();
 // File select via dialog
 fileInput.addEventListener('change', function() {
   if (fileInput.files.length > 0) {
-    selectFile(fileInput.files[0].path || fileInput.files[0].name);
+    uploadFile(fileInput.files[0]);
   }
 });
 
@@ -119,15 +119,14 @@ dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('d
 dropZone.addEventListener('drop', function(e) {
   e.preventDefault(); dropZone.classList.remove('drag');
   var file = e.dataTransfer.files[0];
-  if (file) selectFile(file.path || file.name);
+  if (file) uploadFile(file);
 });
 
-// Click on preview frame to reload
-previewFrame.addEventListener('load', function() { showToast('Preview ready', 1500); });
-
-function selectFile(path) {
-  filename.textContent = '...';
-  fetch('/api/select', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({file:path}) })
+function uploadFile(file) {
+  var formData = new FormData();
+  formData.append('file', file);
+  filename.textContent = 'Uploading...';
+  fetch('/api/upload', { method:'POST', body: formData })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.ok) {
@@ -137,7 +136,8 @@ function selectFile(path) {
       } else {
         showToast('Error: ' + (data.error || 'unknown'));
       }
-    });
+    })
+    .catch(function(e) { showToast('Upload failed: ' + e.message); });
 }
 </script>
 </body>
